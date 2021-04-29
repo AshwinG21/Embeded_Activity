@@ -35,3 +35,8 @@ A digital-to-analog converter changes the digital data fed by the processor to a
 
 ## Actuator: 
 An actuator compares the output given by the D-A Converter to the actual output stored and stores the approved output.
+
+
+
+Build | cppcheck|Codacy| 
+------|------|--------|
