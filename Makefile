@@ -1,60 +1,73 @@
-# Name of the project
-PROJECT_NAME = Calculator
+PROJ_NAME = Activities
 
-# Output directory
-BUILD = build
+BUILD_DIR = Build
 
-# All source code files
-SRC = main.c\
-src/operations.c
+# All Source code files
+SRC = project_main.c\
+src/Activity_1.c\
+src/Activity_2.c\
+src/Activity_3.c\
+src/Activity_4.c
 
-# All test source files
-TEST_SRC = src/operations.c\
-test/test.c\
-unity/unity.c\
 
-TEST_OUTPUT = $(BUILD)/Test_$(PROJECT_NAME).out
 
-# All include folders with header files
-INC	= -Iinc\
--Iunity\
+# All header file paths
+INC = -I inc
 
-#Library Inlcudes
-#INCLUDE_LIBS = 
-INCLUDE_LIBS = -lcunit
+#Avrdude
+AVRDUDE := avrdude
 
-# Project Output name
-PROJECT_OUTPUT = $(BUILD)/$(PROJECT_NAME).out
+#Options for HEX file generation
+HFLAGS = -j .text -j .data -O ihex
 
-# Document files
-DOCUMENTATION_OUTPUT = documentation/html
+# Find out the OS and configure the variables accordingly
+ifdef OS	# All configurations for Windwos OS
+   # Delete command 
+   RM = del /q
+   # Correct the path based on OS
+   FixPath = $(subst /,\,$1)
+   # Name of the compiler used
+   CC = avr-gcc.exe
+   # Name of the elf to hex file converter used
+   AVR_OBJ_CPY = avr-objcopy.exe
+else #All configurations for Linux OS
+   ifeq ($(shell uname), Linux)
+   	  # Delete command
+      RM = rm -rf				
+	  # Correct the path based on OS
+      FixPath = $1				
+	  # Name of the compiler used
+	  CC = avr-gcc
+	  # Name of the elf to hex file converter used
+	  AVR_OBJ_CPY = avr-objcopy 
+   endif
+endif
 
-# Default target built
-$(PROJECT_NAME):all
+# Command to make to consider these names as targets and not as file names in folder
+.PHONY:all analysis clean doc
 
-# Run the target even if the matching name exists
-.PHONY: run clean test doc all
+all:$(BUILD_DIR)
+	# Compile the code and generate the ELF file
+	$(CC) -g -Wall -Os -mmcu=atmega328 -DF_CPU=16000000UL $(INC) $(SRC) -o $(call FixPath,$(BUILD_DIR)/$(PROJ_NAME).elf)
+	
+hex: $(call FixPath,$(BUILD_DIR)/$(PROJ_NAME).elf)
+	#create hex file
+	$(AVR_OBJ_CPY) $(HFLAGS) $< $(call FixPath,$(BUILD_DIR)/$(PROJ_NAME).hex)
 
-all: $(SRC) $(BUILD)
-	gcc $(SRC) $(INC) -o $(PROJECT_OUTPUT).out -lm
+$(BUILD_DIR):
+	# Create directory to store the built files
+	mkdir $(BUILD_DIR)
 
-# Call `make run` to run the application
-run:$(PROJECT_NAME)
-	./$(PROJECT_OUTPUT).out
+analysis: $(SRC)
+	#Analyse the code using Cppcheck command line utility
+	cppcheck --enable=all $^
 
-# Document the code using Doxygen
 doc:
-	make -C ./documentation
+	#Build the code code documentation using Doxygen command line utility
+	make -C documentation
 
-# Build and run the unit tests
-test:$(BUILD)
-	gcc $(TEST_SRC) $(INC) -o $(TEST_OUTPUT) $(INCLUDE_LIBS) -lm
-	./$(TEST_OUTPUT)
-
-# Remove all the built files, invoke by `make clean`
 clean:
-	rm -rf $(BUILD) $(DOCUMENTATION_OUTPUT)
-
-# Create new build folder if not present
-$(BUILD):
-	mkdir build
+	# Remove all the build files and generated document files
+	rm -rf Build
+  
+	make -C documentation clean
